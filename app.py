@@ -38,7 +38,9 @@ def static_files(filename):
 # =========================================================
 # LOAD DATASET
 # =========================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
 if not os.path.exists(DATA_PATH):
     raise FileNotFoundError(
         "house_prices.csv not found. Make sure it is in the same folder as app.py"
