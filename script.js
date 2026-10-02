@@ -1,4 +1,4 @@
-const API = "http://127.0.0.1:5000";
+const API = "";
 const $ = id => document.getElementById(id);
 
 $("location_score").addEventListener("input", e => $("locationValue").textContent = e.target.value);
