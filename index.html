@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -10,438 +8,1057 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        Smart House Price Predictor
-    </title>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <link
-        rel="stylesheet"
-        href="/static/style.css"
+    <meta
+        name="description"
+        content="AI-powered house price prediction and area-wise property analysis"
     >
 
+    <title>HousePrice AI | Smart Property Prediction</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header>
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
 
-    <div class="logo">
-        🏠 SmartHome AI
+<header class="navbar">
+
+    <div class="container nav-container">
+
+        <a href="#home" class="logo">
+            <span class="logo-icon">🏠</span>
+            <span>HousePrice<span class="logo-highlight">AI</span></span>
+        </a>
+
+        <nav class="nav-links">
+
+            <a href="#home">Home</a>
+
+            <a href="#predict">
+                Predict
+            </a>
+
+            <a href="#market">
+                Market
+            </a>
+
+            <a href="#areas">
+                Areas
+            </a>
+
+            <a href="#compare">
+                Compare
+            </a>
+
+            <a href="#about">
+                About
+            </a>
+
+        </nav>
+
+        <button
+            class="mobile-menu-btn"
+            id="mobileMenuBtn"
+            aria-label="Open menu"
+        >
+            ☰
+        </button>
+
     </div>
-
-    <nav>
-        <a href="#predict">Predict</a>
-        <a href="#market">Market</a>
-        <a href="#areas">Areas</a>
-        <a href="#about">About</a>
-    </nav>
 
 </header>
 
 
-<section class="hero">
+<!-- =====================================================
+     HERO
+===================================================== -->
 
-    <div class="hero-content">
+<section id="home" class="hero">
 
-        <p class="tag">
-            AI POWERED REAL ESTATE
-        </p>
+    <div class="hero-background"></div>
 
-        <h1>
-            Predict Your
-            <span>House Price</span>
-            Instantly
-        </h1>
+    <div class="container hero-grid">
 
-        <p>
-            Get an estimated property price,
-            area-wise market information,
-            price per sq.ft and useful
-            locality insights.
-        </p>
+        <div class="hero-content">
 
-        <a
-            href="#predict"
-            class="hero-button"
-        >
-            Start Prediction →
-        </a>
+            <div class="hero-badge">
+                🤖 AI POWERED PROPERTY ANALYSIS
+            </div>
+
+            <h1>
+                Find Your
+                <span>Perfect Property Price</span>
+            </h1>
+
+            <p>
+                Predict house prices, compare localities,
+                analyze price per sq.ft. and discover
+                similar areas using machine learning.
+            </p>
+
+            <div class="hero-buttons">
+
+                <a
+                    href="#predict"
+                    class="btn btn-primary"
+                >
+                    🏠 Predict Price
+                </a>
+
+                <a
+                    href="#market"
+                    class="btn btn-secondary"
+                >
+                    📊 Explore Market
+                </a>
+
+            </div>
+
+            <div class="hero-trust">
+
+                <div>
+                    <strong id="heroProperties">
+                        --
+                    </strong>
+                    <span>Properties</span>
+                </div>
+
+                <div>
+                    <strong id="heroAreas">
+                        --
+                    </strong>
+                    <span>Areas</span>
+                </div>
+
+                <div>
+                    <strong id="heroAccuracy">
+                        --
+                    </strong>
+                    <span>Model R²</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-card">
+
+            <div class="floating-card card-one">
+                <span>📈</span>
+                <div>
+                    <small>Market Analysis</small>
+                    <strong>Real-time insights</strong>
+                </div>
+            </div>
+
+            <div class="house-illustration">
+
+                <div class="sun">☀️</div>
+
+                <div class="house">
+                    <div class="roof"></div>
+
+                    <div class="house-body">
+
+                        <div class="window window-left"></div>
+
+                        <div class="door"></div>
+
+                        <div class="window window-right"></div>
+
+                    </div>
+
+                </div>
+
+                <div class="ground"></div>
+
+            </div>
+
+            <div class="floating-card card-two">
+
+                <span>💰</span>
+
+                <div>
+                    <small>Price / Sq.Ft.</small>
+                    <strong id="heroPriceSqft">--</strong>
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
 
 </section>
 
 
-<section
-    id="predict"
-    class="container"
->
+<!-- =====================================================
+     MARKET SUMMARY
+===================================================== -->
 
-    <div class="section-title">
+<section id="market" class="section market-section">
 
-        <p>AI PREDICTION</p>
+    <div class="container">
 
-        <h2>
-            Estimate Your Property Value
-        </h2>
+        <div class="section-heading">
+
+            <div>
+                <span class="section-label">
+                    MARKET OVERVIEW
+                </span>
+
+                <h2>
+                    Property Market
+                    <span>at a Glance</span>
+                </h2>
+            </div>
+
+            <p>
+                Get a quick overview of the property
+                dataset and current market statistics.
+            </p>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+
+                <div class="stat-icon blue">
+                    🏠
+                </div>
+
+                <div>
+                    <span>Total Properties</span>
+
+                    <strong id="totalProperties">
+                        --
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon purple">
+                    📍
+                </div>
+
+                <div>
+                    <span>Areas Covered</span>
+
+                    <strong id="totalAreas">
+                        --
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon green">
+                    💰
+                </div>
+
+                <div>
+                    <span>Average Price</span>
+
+                    <strong id="averagePrice">
+                        --
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon orange">
+                    📐
+                </div>
+
+                <div>
+                    <span>Average Price / Sq.Ft.</span>
+
+                    <strong id="averagePriceSqft">
+                        --
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
 
+</section>
 
-    <div class="prediction-grid">
 
-        <div class="card form-card">
+<!-- =====================================================
+     PREDICTION SECTION
+===================================================== -->
 
-            <h3>
-                Property Details
-            </h3>
+<section id="predict" class="section prediction-section">
 
-            <form id="predictionForm">
+    <div class="container">
 
-                <label>
+        <div class="section-heading centered">
+
+            <span class="section-label">
+                AI PRICE PREDICTOR
+            </span>
+
+            <h2>
+                Estimate Your
+                <span>House Price</span>
+            </h2>
+
+            <p>
+                Enter property details and our machine
+                learning model will estimate the expected
+                market price.
+            </p>
+
+        </div>
+
+
+        <div class="prediction-layout">
+
+
+            <!-- FORM -->
+
+            <div class="prediction-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h3>
+                            🏠 Property Details
+                        </h3>
+
+                        <p>
+                            Enter information about the property
+                        </p>
+
+                    </div>
+
+                    <span class="ai-badge">
+                        AI
+                    </span>
+
+                </div>
+
+
+                <form id="predictionForm">
+
+
+                    <!-- AREA -->
+
+                    <div class="form-group">
+
+                        <label for="area">
+
+                            📍 Area / Locality
+
+                        </label>
+
+                        <select
+                            id="area"
+                            name="area"
+                            required
+                        >
+
+                            <option value="">
+                                Select an area
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-row">
+
+
+                        <!-- BHK -->
+
+                        <div class="form-group">
+
+                            <label for="bhk">
+                                🛏️ BHK
+                            </label>
+
+                            <select
+                                id="bhk"
+                                name="bhk"
+                                required
+                            >
+
+                                <option value="">
+                                    Select BHK
+                                </option>
+
+                                <option value="1">
+                                    1 BHK
+                                </option>
+
+                                <option value="2">
+                                    2 BHK
+                                </option>
+
+                                <option value="3">
+                                    3 BHK
+                                </option>
+
+                                <option value="4">
+                                    4 BHK
+                                </option>
+
+                                <option value="5">
+                                    5 BHK
+                                </option>
+
+                                <option value="6">
+                                    6+ BHK
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- BATHROOM -->
+
+                        <div class="form-group">
+
+                            <label for="bathrooms">
+                                🚿 Bathrooms
+                            </label>
+
+                            <select
+                                id="bathrooms"
+                                name="bathrooms"
+                                required
+                            >
+
+                                <option value="">
+                                    Select
+                                </option>
+
+                                <option value="1">
+                                    1
+                                </option>
+
+                                <option value="2">
+                                    2
+                                </option>
+
+                                <option value="3">
+                                    3
+                                </option>
+
+                                <option value="4">
+                                    4
+                                </option>
+
+                                <option value="5">
+                                    5+
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-row">
+
+
+                        <!-- SQFT -->
+
+                        <div class="form-group">
+
+                            <label for="sqft">
+                                📐 Area (Sq.Ft.)
+                            </label>
+
+                            <input
+                                type="number"
+                                id="sqft"
+                                name="sqft"
+                                placeholder="Example: 1200"
+                                min="100"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- AGE -->
+
+                        <div class="form-group">
+
+                            <label for="age">
+                                🏗️ Property Age
+                            </label>
+
+                            <input
+                                type="number"
+                                id="age"
+                                name="age"
+                                placeholder="Example: 5"
+                                min="0"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary predict-btn"
+                    >
+
+                        <span id="predictButtonText">
+                            🔮 Predict House Price
+                        </span>
+
+                        <span
+                            id="predictLoader"
+                            class="loader hidden"
+                        ></span>
+
+                    </button>
+
+
+                    <div
+                        id="formMessage"
+                        class="form-message"
+                    ></div>
+
+                </form>
+
+            </div>
+
+
+            <!-- RESULT -->
+
+            <div
+                id="predictionResult"
+                class="result-card"
+            >
+
+                <div class="result-top">
+
+                    <span class="result-label">
+                        ESTIMATED PROPERTY VALUE
+                    </span>
+
+                    <span class="result-icon">
+                        💰
+                    </span>
+
+                </div>
+
+
+                <div class="result-price">
+
+                    <span id="predictedPrice">
+                        ₹ --
+                    </span>
+
+                </div>
+
+
+                <p class="result-note">
+                    Estimated using property details
+                    and area-level market data.
+                </p>
+
+
+                <div class="result-grid">
+
+                    <div class="result-item">
+
+                        <span>
+                            Minimum
+                        </span>
+
+                        <strong id="minimumPrice">
+                            ₹ --
+                        </strong>
+
+                    </div>
+
+
+                    <div class="result-item">
+
+                        <span>
+                            Maximum
+                        </span>
+
+                        <strong id="maximumPrice">
+                            ₹ --
+                        </strong>
+
+                    </div>
+
+
+                    <div class="result-item">
+
+                        <span>
+                            Price / Sq.Ft.
+                        </span>
+
+                        <strong id="predictionPriceSqft">
+                            ₹ --
+                        </strong>
+
+                    </div>
+
+
+                    <div class="result-item">
+
+                        <span>
+                            Area Average
+                        </span>
+
+                        <strong id="areaAverage">
+                            ₹ --
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="confidence-box">
+
+                    <div>
+
+                        <span>
+                            Model R²
+                        </span>
+
+                        <strong id="modelR2">
+                            --
+                        </strong>
+
+                    </div>
+
+                    <div class="confidence-bar">
+
+                        <div
+                            id="confidenceProgress"
+                            class="confidence-progress"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     AREA ANALYSIS
+===================================================== -->
+
+<section id="areas" class="section area-section">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    LOCALITY INTELLIGENCE
+                </span>
+
+                <h2>
+                    Area-wise
+                    <span>Price Analysis</span>
+                </h2>
+
+            </div>
+
+            <p>
+                Select a locality to understand average
+                prices, price per square foot and market range.
+            </p>
+
+        </div>
+
+
+        <div class="area-analysis-layout">
+
+
+            <div class="area-selector-card">
+
+                <label for="areaAnalysis">
                     Select Area
                 </label>
 
-                <select
-                    id="area"
-                    required
-                >
+                <select id="areaAnalysis">
 
                     <option value="">
-                        Loading areas...
+                        Choose an area
                     </option>
 
                 </select>
 
 
-                <label>
-                    BHK
-                </label>
-
-                <input
-                    id="bhk"
-                    type="number"
-                    min="1"
-                    max="20"
-                    value="2"
-                    required
+                <div
+                    id="areaDetails"
+                    class="area-details"
                 >
 
+                    <div class="empty-state">
 
-                <label>
-                    Bathrooms
-                </label>
+                        <span>📍</span>
 
-                <input
-                    id="bathrooms"
-                    type="number"
-                    min="1"
-                    max="20"
-                    value="2"
-                    required
+                        <p>
+                            Select an area to see
+                            detailed market information.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="chart-card">
+
+                <div class="chart-header">
+
+                    <div>
+
+                        <h3>
+                            📊 Area Price Comparison
+                        </h3>
+
+                        <p>
+                            Average property price by locality
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="chart-container">
+
+                    <canvas id="areaChart"></canvas>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     TREND SECTION
+===================================================== -->
+
+<section class="section trend-section">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    MARKET TREND
+                </span>
+
+                <h2>
+                    Property Price
+                    <span>Trend</span>
+                </h2>
+
+            </div>
+
+            <p id="trendMessage">
+                Historical trend will appear when
+                your dataset contains year/date information.
+            </p>
+
+        </div>
+
+
+        <div class="chart-card large-chart">
+
+            <div class="chart-container">
+
+                <canvas id="trendChart"></canvas>
+
+                <div
+                    id="trendEmpty"
+                    class="chart-empty hidden"
                 >
 
+                    <span>📈</span>
 
-                <label>
-                    Property Size (sq.ft)
-                </label>
+                    <h3>
+                        Historical Trend Not Available
+                    </h3>
 
-                <input
-                    id="sqft"
-                    type="number"
-                    min="100"
-                    value="1000"
-                    required
-                >
+                    <p>
+                        Add a year or date column to the
+                        dataset to enable historical trends.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 
 
-                <label>
-                    Property Age
-                </label>
+<!-- =====================================================
+     SIMILAR AREAS
+===================================================== -->
 
-                <input
-                    id="age"
-                    type="number"
-                    min="0"
-                    value="5"
-                    required
-                >
+<section class="section recommendations-section">
 
-                <button
-                    type="submit"
-                    class="predict-button"
-                >
-                    🤖 Predict Price
-                </button>
+    <div class="container">
 
-            </form>
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SMART RECOMMENDATIONS
+                </span>
+
+                <h2>
+                    Similar
+                    <span>Areas</span>
+                </h2>
+
+            </div>
+
+            <p>
+                Discover localities with similar average
+                prices and price-per-square-foot values.
+            </p>
 
         </div>
 
 
         <div
-            class="card result-card"
-            id="resultCard"
+            id="recommendationsGrid"
+            class="recommendations-grid"
         >
 
-            <div class="result-icon">
-                🏠
+            <div class="loading-card">
+                Loading recommendations...
             </div>
 
-            <p>
-                ESTIMATED PROPERTY VALUE
-            </p>
+        </div>
 
-            <h2 id="predictedPrice">
-                ₹0
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     BUDGET FINDER
+===================================================== -->
+
+<section class="section budget-section">
+
+    <div class="container">
+
+        <div class="budget-card">
+
+            <div class="budget-content">
+
+                <span class="section-label">
+                    SMART SEARCH
+                </span>
+
+                <h2>
+                    Find Areas Within
+                    <span>Your Budget</span>
+                </h2>
+
+                <p>
+                    Enter your maximum budget and discover
+                    areas where the average property price
+                    fits your budget.
+                </p>
+
+            </div>
+
+
+            <div class="budget-form">
+
+                <label for="budget">
+                    Maximum Budget
+                </label>
+
+                <div class="budget-input">
+
+                    <span>₹</span>
+
+                    <input
+                        type="number"
+                        id="budget"
+                        placeholder="Example: 5000000"
+                        min="1"
+                    >
+
+                </div>
+
+                <button
+                    id="budgetBtn"
+                    class="btn btn-primary"
+                >
+                    🔍 Find Areas
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="budgetResults"
+            class="budget-results"
+        ></div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     AREA COMPARISON
+===================================================== -->
+
+<section id="compare" class="section comparison-section">
+
+    <div class="container">
+
+        <div class="section-heading centered">
+
+            <span class="section-label">
+                COMPARE LOCALITIES
+            </span>
+
+            <h2>
+                Compare
+                <span>Areas</span>
             </h2>
 
-            <div class="range">
-
-                <div>
-                    <small>
-                        Minimum
-                    </small>
-
-                    <strong id="minPrice">
-                        ₹0
-                    </strong>
-                </div>
-
-                <div>
-                    <small>
-                        Maximum
-                    </small>
-
-                    <strong id="maxPrice">
-                        ₹0
-                    </strong>
-                </div>
-
-            </div>
-
-
-            <div class="result-details">
-
-                <div>
-                    <span>
-                        Price / sq.ft
-                    </span>
-
-                    <strong id="priceSqft">
-                        ₹0
-                    </strong>
-                </div>
-
-                <div>
-                    <span>
-                        Area Average
-                    </span>
-
-                    <strong id="areaAverage">
-                        ₹0
-                    </strong>
-                </div>
-
-                <div>
-                    <span>
-                        Model R²
-                    </span>
-
-                    <strong id="accuracy">
-                        0%
-                    </strong>
-                </div>
-
-            </div>
-
-            <p
-                id="resultMessage"
-                class="result-message"
-            ></p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<section
-    id="market"
-    class="container"
->
-
-    <div class="section-title">
-
-        <p>MARKET INSIGHTS</p>
-
-        <h2>
-            Real Estate Overview
-        </h2>
-
-    </div>
-
-
-    <div class="stats-grid">
-
-        <div class="stat-card">
-
-            <span>🏠</span>
-
-            <h3 id="totalProperties">
-                -
-            </h3>
-
             <p>
-                Properties
+                Select multiple areas and compare their
+                average price and price per square foot.
             </p>
 
         </div>
 
 
-        <div class="stat-card">
+        <div class="comparison-controls">
 
-            <span>📍</span>
+            <select
+                id="compareArea1"
+                class="compare-select"
+            >
 
-            <h3 id="totalAreas">
-                -
-            </h3>
+                <option value="">
+                    Select Area 1
+                </option>
 
-            <p>
-                Areas
-            </p>
+            </select>
+
+
+            <select
+                id="compareArea2"
+                class="compare-select"
+            >
+
+                <option value="">
+                    Select Area 2
+                </option>
+
+            </select>
+
+
+            <select
+                id="compareArea3"
+                class="compare-select"
+            >
+
+                <option value="">
+                    Select Area 3
+                </option>
+
+            </select>
+
+
+            <button
+                id="compareBtn"
+                class="btn btn-primary"
+            >
+                ⚖️ Compare
+            </button>
 
         </div>
 
 
-        <div class="stat-card">
-
-            <span>💰</span>
-
-            <h3 id="averagePrice">
-                -
-            </h3>
-
-            <p>
-                Average Price
-            </p>
-
-        </div>
+        <div
+            id="comparisonResults"
+            class="comparison-results"
+        ></div>
 
 
-        <div class="stat-card">
-
-            <span>📐</span>
-
-            <h3 id="averageSqft">
-                -
-            </h3>
-
-            <p>
-                Avg Price / Sq.ft
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <div class="chart-card">
-
-        <h3>
-            Area-wise Average Property Price
-        </h3>
-
-        <canvas
-            id="areaChart"
-        ></canvas>
-
-    </div>
-
-</section>
-
-
-<section
-    id="areas"
-    class="container"
->
-
-    <div class="section-title">
-
-        <p>AREA ANALYSIS</p>
-
-        <h2>
-            Compare Localities
-        </h2>
-
-    </div>
-
-
-    <div class="area-search">
-
-        <select id="areaAnalysis">
-
-            <option value="">
-                Select area
-            </option>
-
-        </select>
-
-        <button
-            onclick="loadAreaDetails()"
+        <div
+            id="comparisonChartContainer"
+            class="chart-card hidden"
         >
-            Analyze Area
-        </button>
 
-    </div>
+            <div class="chart-container">
 
+                <canvas id="comparisonChart"></canvas>
 
-    <div
-        class="area-result"
-        id="areaResult"
-    >
+            </div>
 
-        <div>
-            <span>
-                Average Price
-            </span>
-
-            <strong id="detailAverage">
-                -
-            </strong>
-        </div>
-
-        <div>
-            <span>
-                Price / Sq.ft
-            </span>
-
-            <strong id="detailSqft">
-                -
-            </strong>
-        </div>
-
-        <div>
-            <span>
-                Minimum Price
-            </span>
-
-            <strong id="detailMin">
-                -
-            </strong>
-        </div>
-
-        <div>
-            <span>
-                Maximum Price
-            </span>
-
-            <strong id="detailMax">
-                -
-            </strong>
         </div>
 
     </div>
@@ -449,45 +1066,283 @@
 </section>
 
 
-<section
-    id="about"
-    class="about"
->
+<!-- =====================================================
+     PRICE DISTRIBUTION
+===================================================== -->
 
-    <div>
+<section class="section distribution-section">
 
-        <p>
-            ABOUT THE PROJECT
-        </p>
+    <div class="container">
 
-        <h2>
-            Smart House Price Prediction
-        </h2>
+        <div class="section-heading">
 
-        <p>
-            This project uses machine learning
-            to estimate property prices based
-            on locality, BHK, bathrooms,
-            property size and age.
-        </p>
+            <div>
+
+                <span class="section-label">
+                    MARKET DISTRIBUTION
+                </span>
+
+                <h2>
+                    Property Price
+                    <span>Distribution</span>
+                </h2>
+
+            </div>
+
+            <p>
+                Understand how properties are distributed
+                across different price ranges.
+            </p>
+
+        </div>
+
+
+        <div class="chart-card large-chart">
+
+            <div class="chart-container">
+
+                <canvas id="distributionChart"></canvas>
+
+            </div>
+
+        </div>
 
     </div>
 
 </section>
 
 
-<footer>
+<!-- =====================================================
+     ABOUT
+===================================================== -->
 
-    <p>
-        © 2026 SmartHome AI |
-        Machine Learning House Price Prediction
-    </p>
+<section id="about" class="section about-section">
+
+    <div class="container">
+
+        <div class="about-grid">
+
+
+            <div class="about-content">
+
+                <span class="section-label">
+                    ABOUT THE PROJECT
+                </span>
+
+                <h2>
+                    Smart House Price
+                    <span>Prediction System</span>
+                </h2>
+
+                <p>
+                    This project uses machine learning to
+                    estimate property prices from factors
+                    such as locality, BHK, bathrooms,
+                    property size and property age.
+                </p>
+
+                <p>
+                    The system also provides area-wise
+                    analysis, price-per-square-foot data,
+                    market comparison and smart area
+                    recommendations.
+                </p>
+
+
+                <div class="tech-stack">
+
+                    <span>🐍 Python</span>
+
+                    <span>🌐 Flask</span>
+
+                    <span>🤖 Machine Learning</span>
+
+                    <span>📊 Chart.js</span>
+
+                    <span>🎨 HTML/CSS/JS</span>
+
+                </div>
+
+            </div>
+
+
+            <div class="about-features">
+
+                <div class="feature-item">
+
+                    <div class="feature-icon">
+                        🤖
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Machine Learning
+                        </h3>
+
+                        <p>
+                            Random Forest regression
+                            estimates property prices.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature-item">
+
+                    <div class="feature-icon">
+                        📍
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Area Intelligence
+                        </h3>
+
+                        <p>
+                            Analyze locality-wise property
+                            market statistics.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature-item">
+
+                    <div class="feature-icon">
+                        📊
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Visual Analytics
+                        </h3>
+
+                        <p>
+                            Interactive charts make property
+                            data easier to understand.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="feature-item">
+
+                    <div class="feature-icon">
+                        💡
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Smart Recommendations
+                        </h3>
+
+                        <p>
+                            Discover similar localities based
+                            on market characteristics.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<footer class="footer">
+
+    <div class="container footer-content">
+
+        <div>
+
+            <a href="#home" class="logo">
+
+                <span class="logo-icon">
+                    🏠
+                </span>
+
+                <span>
+                    HousePrice
+                    <span class="logo-highlight">
+                        AI
+                    </span>
+                </span>
+
+            </a>
+
+            <p>
+                Smart property analysis powered by
+                machine learning.
+            </p>
+
+        </div>
+
+
+        <div class="footer-links">
+
+            <a href="#predict">
+                Predict
+            </a>
+
+            <a href="#market">
+                Market
+            </a>
+
+            <a href="#areas">
+                Areas
+            </a>
+
+            <a href="#compare">
+                Compare
+            </a>
+
+        </div>
+
+
+        <div class="footer-copy">
+
+            © 2026 HousePrice AI
+            create by ompatil
+        </div>
+
+    </div>
 
 </footer>
 
 
-<script src="/static/script.js"></script>
+<!-- Toast notification -->
+
+<div
+    id="toast"
+    class="toast"
+>
+    <span id="toastIcon">✓</span>
+    <span id="toastMessage"></span>
+</div>
+
+
+<!-- Main JavaScript -->
+
+<script src="script.js"></script>
 
 </body>
-
 </html>
