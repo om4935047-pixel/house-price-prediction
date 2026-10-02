@@ -1,5 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, r2_score
 
 import pandas as pd
 import numpy as np
@@ -16,11 +22,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
 
-# IMPORTANT:
-# Get the folder where app.py is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
 # ==========================================================
 # SERVE WEBSITE FILES
 # ==========================================================
@@ -29,28 +30,16 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def home():
     return render_template("index.html")
 
-
-@app.route("/static/<path:filename>")
-def static_files(filename):
-    return send_from_directory(BASE_DIR, filename)
-
-
 # ==========================================================
 # LOAD DATASET
 # ==========================================================
-
-# house_prices.csv is in the SAME folder as app.py
-DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
-
 
 if not os.path.exists(DATA_PATH):
     raise FileNotFoundError(
         "house_prices.csv not found. Make sure it is in the same folder as app.py"
     )
 
-
 df = pd.read_csv(DATA_PATH)
-
 
 # ==========================================================
 # CLEAN COLUMN NAMES
