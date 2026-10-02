@@ -1,18 +1,16 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 import pandas as pd
 import numpy as np
 import os
 
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import mean_absolute_error, r2_score
+app = Flask(__name__)
+CORS(app)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
 # ==========================================================
 # FLASK APP
 # ==========================================================
@@ -31,7 +29,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.route("/")
 def home():
-    return send_from_directory(BASE_DIR, "index.html")
+    return render_template("index.html")
 
 
 @app.route("/static/<path:filename>")
