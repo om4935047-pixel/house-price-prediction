@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HousePrice AI | Linear Regression</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="navbar">
+  <div class="brand"><span>⌂</span> HousePrice<span class="accent">AI</span></div>
+  <nav>
+    <a href="#predict">Predict</a>
+    <a href="#how">How It Works</a>
+    <a href="#metrics">Model</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="pill">MACHINE LEARNING • LINEAR REGRESSION</div>
+      <h1>Predict a home's<br><span>market value</span> in seconds.</h1>
+      <p>Enter property details and get an instant estimated price powered by a supervised machine learning model.</p>
+      <a class="btn primary" href="#predict">Start Prediction →</a>
+    </div>
+    <div class="hero-card">
+      <div class="house-icon">⌂</div>
+      <div class="floating one">6 Features</div>
+      <div class="floating two">R² Model</div>
+      <div class="floating three">Instant Result</div>
+    </div>
+  </section>
+
+  <section id="predict" class="section">
+    <div class="section-heading">
+      <div><span class="eyebrow">01 / PREDICTION</span><h2>Property details</h2></div>
+      <span class="api-status" id="apiStatus">● Checking API...</span>
+    </div>
+
+    <div class="prediction-grid">
+      <form id="predictionForm" class="card form-card">
+        <div class="field full">
+          <label>Area <span>sq ft</span></label>
+          <input id="area_sqft" type="number" min="100" value="1500" required>
+          <small>Built-up area of the property</small>
+        </div>
+        <div class="field">
+          <label>Bedrooms</label>
+          <input id="bedrooms" type="number" min="1" max="10" value="3" required>
+        </div>
+        <div class="field">
+          <label>Bathrooms</label>
+          <input id="bathrooms" type="number" min="1" max="10" value="2" required>
+        </div>
+        <div class="field">
+          <label>Age <span>years</span></label>
+          <input id="age_years" type="number" min="0" max="150" value="5" required>
+        </div>
+        <div class="field">
+          <label>Parking spaces</label>
+          <input id="parking" type="number" min="0" max="5" value="1" required>
+        </div>
+        <div class="field full">
+          <label>Location score <span>1–10</span></label>
+          <input id="location_score" type="range" min="1" max="10" value="7">
+          <div class="range-row"><span>1 — Basic</span><strong id="locationValue">7</strong><span>10 — Premium</span></div>
+        </div>
+        <button class="btn primary full" type="submit" id="predictBtn">Predict House Price</button>
+      </form>
+
+      <div class="card result-card" id="resultCard">
+        <span class="eyebrow">ESTIMATED VALUE</span>
+        <div id="resultEmpty">
+          <div class="result-icon">₹</div>
+          <h3>Your prediction will appear here</h3>
+          <p>Complete the property details and click Predict House Price.</p>
+        </div>
+        <div id="resultReady" class="hidden">
+          <p class="result-label">Predicted house price</p>
+          <h3 id="price">₹0</h3>
+          <div class="price-lakh" id="priceLakh">0 lakh</div>
+          <div class="divider"></div>
+          <div class="mini-stats">
+            <div><span>Model</span><b>Linear Regression</b></div>
+            <div><span>Currency</span><b>Indian Rupee</b></div>
+          </div>
+          <button class="btn secondary" id="againBtn">↻ Predict Again</button>
+        </div>
+        <div id="errorBox" class="error hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="section light">
+    <div class="section-heading centered">
+      <span class="eyebrow">02 / WORKFLOW</span>
+      <h2>From property data to prediction</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><span>01</span><h3>Input</h3><p>Collect area, rooms, age, parking and location information.</p></div>
+      <div class="step"><span>02</span><h3>Process</h3><p>The Flask API validates the input and prepares model features.</p></div>
+      <div class="step"><span>03</span><h3>Predict</h3><p>Linear Regression estimates the continuous house price.</p></div>
+      <div class="step"><span>04</span><h3>Evaluate</h3><p>MAE, MSE, RMSE and R² measure model performance.</p></div>
+    </div>
+  </section>
+
+  <section id="metrics" class="section">
+    <div class="section-heading">
+      <div><span class="eyebrow">03 / MODEL</span><h2>Model performance</h2></div>
+      <button class="btn small" id="retrainBtn">Retrain Model</button>
+    </div>
+    <div class="metrics" id="metricsBox">
+      <div class="metric"><span>MAE</span><b>—</b><small>Mean Absolute Error</small></div>
+      <div class="metric"><span>MSE</span><b>—</b><small>Mean Squared Error</small></div>
+      <div class="metric"><span>RMSE</span><b>—</b><small>Root Mean Squared Error</small></div>
+      <div class="metric"><span>R²</span><b>—</b><small>Coefficient of Determination</small></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div><strong>HousePriceAI</strong> — BCA Machine Learning Project</div>
+  <div>Built with HTML • CSS • JavaScript • Python • Flask • Scikit-learn</div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
