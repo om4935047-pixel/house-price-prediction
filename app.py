@@ -1,30 +1,33 @@
-import os
-import warnings
-import joblib
-import numpy as np
-import pandas as pd
-
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
-from sklearn.compose import ColumnTransformer
+import pandas as pd
+import numpy as np
+import os
+
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score, mean_absolute_error
+from sklearn.metrics import mean_absolute_error, r2_score
 
-warnings.filterwarnings("ignore")
 
-# =========================================================
-# APP CONFIGURATION
-# =========================================================
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# ==========================================================
+# FLASK APP
+# ==========================================================
 
 app = Flask(__name__)
+CORS(app)
+
+# IMPORTANT:
+# Get the folder where app.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+# ==========================================================
+# SERVE WEBSITE FILES
+# ==========================================================
 
 @app.route("/")
 def home():
@@ -35,20 +38,28 @@ def home():
 def static_files(filename):
     return send_from_directory(BASE_DIR, filename)
 
-# =========================================================
-# LOAD DATASET
-# =========================================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# ==========================================================
+# LOAD DATASET
+# ==========================================================
+
+# house_prices.csv is in the SAME folder as app.py
 DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
+
+
 if not os.path.exists(DATA_PATH):
     raise FileNotFoundError(
         "house_prices.csv not found. Make sure it is in the same folder as app.py"
     )
 
+
 df = pd.read_csv(DATA_PATH)
 
-# Clean column names
+
+# ==========================================================
+# CLEAN COLUMN NAMES
+# ==========================================================
+
 df.columns = (
     df.columns
     .str.strip()
@@ -58,7 +69,11 @@ df.columns = (
 
 print("Dataset columns:", list(df.columns))
 
-# Required columns
+
+# ==========================================================
+# REQUIRED COLUMNS
+# ==========================================================
+
 required_columns = [
     "area",
     "bhk",
@@ -68,10 +83,12 @@ required_columns = [
     "price"
 ]
 
+
 missing_columns = [
     col for col in required_columns
     if col not in df.columns
 ]
+
 
 if missing_columns:
     raise ValueError(
@@ -79,56 +96,56 @@ if missing_columns:
     )
 
 
-# =========================================================
+# ==========================================================
 # CLEAN DATA
-# =========================================================
+# ==========================================================
 
-df["area"] = df["area"].astype(str).str.strip()
+df = df.dropna(subset=required_columns)
 
-for column in ["bhk", "bathrooms", "sqft", "age", "price"]:
-    df[column] = pd.to_numeric(
-        df[column],
+
+# Convert numeric columns
+for col in ["bhk", "bathrooms", "sqft", "age", "price"]:
+    df[col] = pd.to_numeric(
+        df[col],
         errors="coerce"
     )
 
-df = df.dropna(
-    subset=[
+
+df = df.dropna()
+
+
+# Remove invalid values
+df = df[
+    (df["bhk"] > 0) &
+    (df["bathrooms"] > 0) &
+    (df["sqft"] > 0) &
+    (df["age"] >= 0) &
+    (df["price"] > 0)
+]
+
+
+# ==========================================================
+# FEATURES
+# ==========================================================
+
+X = df[
+    [
         "area",
         "bhk",
         "bathrooms",
         "sqft",
-        "age",
-        "price"
+        "age"
     ]
-)
-
-df = df[df["sqft"] > 0]
-df = df[df["price"] > 0]
-
-df = df.reset_index(drop=True)
-
-print(f"Loaded {len(df)} properties")
-print(f"Areas: {df['area'].nunique()}")
-
-
-# =========================================================
-# TRAIN MACHINE LEARNING MODEL
-# =========================================================
-
-FEATURES = [
-    "area",
-    "bhk",
-    "bathrooms",
-    "sqft",
-    "age"
 ]
 
-TARGET = "price"
 
-X = df[FEATURES]
-y = df[TARGET]
+y = df["price"]
 
-categorical_features = ["area"]
+
+categorical_features = [
+    "area"
+]
+
 
 numeric_features = [
     "bhk",
@@ -136,6 +153,11 @@ numeric_features = [
     "sqft",
     "age"
 ]
+
+
+# ==========================================================
+# PREPROCESSOR
+# ==========================================================
 
 preprocessor = ColumnTransformer(
     transformers=[
@@ -145,14 +167,15 @@ preprocessor = ColumnTransformer(
                 handle_unknown="ignore"
             ),
             categorical_features
-        ),
-        (
-            "numeric",
-            "passthrough",
-            numeric_features
         )
-    ]
+    ],
+    remainder="passthrough"
 )
+
+
+# ==========================================================
+# MACHINE LEARNING MODEL
+# ==========================================================
 
 model = Pipeline(
     steps=[
@@ -166,165 +189,76 @@ model = Pipeline(
                 n_estimators=250,
                 random_state=42,
                 max_depth=18,
-                min_samples_leaf=2,
-                n_jobs=-1
+                min_samples_split=2
             )
         )
     ]
 )
 
 
-# =========================================================
+# ==========================================================
+# TRAIN MODEL
+# ==========================================================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42
+)
+
+
+model.fit(
+    X_train,
+    y_train
+)
+
+
+# ==========================================================
 # MODEL EVALUATION
-# =========================================================
+# ==========================================================
 
-if len(df) >= 10:
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.20,
-        random_state=42
-    )
-
-    model.fit(X_train, y_train)
-
-    predictions = model.predict(X_test)
-
-    model_r2 = r2_score(
-        y_test,
-        predictions
-    )
-
-    model_mae = mean_absolute_error(
-        y_test,
-        predictions
-    )
-
-else:
-
-    model.fit(X, y)
-
-    model_r2 = 0
-    model_mae = 0
+predictions = model.predict(X_test)
 
 
-# =========================================================
-# SAVE MODEL
-# =========================================================
-
-try:
-    joblib.dump(
-        model,
-        MODEL_PATH
-    )
-except Exception as e:
-    print("Could not save model:", e)
+mae = mean_absolute_error(
+    y_test,
+    predictions
+)
 
 
-# =========================================================
-# HELPER FUNCTIONS
-# =========================================================
-
-def safe_float(value, default=0):
-    try:
-        return float(value)
-    except:
-        return default
+r2 = r2_score(
+    y_test,
+    predictions
+)
 
 
-def safe_int(value, default=0):
-    try:
-        return int(float(value))
-    except:
-        return default
+print("========================================")
+print("Model trained successfully")
+print("Dataset rows:", len(df))
+print("MAE:", mae)
+print("R2:", r2)
+print("========================================")
 
 
-def area_statistics(area_name):
-
-    area_data = df[
-        df["area"].str.lower()
-        == str(area_name).lower()
-    ]
-
-    if area_data.empty:
-        return None
-
-    average_price = area_data["price"].mean()
-
-    average_sqft = area_data["sqft"].mean()
-
-    price_per_sqft = (
-        area_data["price"] /
-        area_data["sqft"]
-    ).mean()
-
-    return {
-        "area": str(area_data["area"].iloc[0]),
-        "properties": int(len(area_data)),
-        "average_price": round(float(average_price), 2),
-        "minimum_price": round(
-            float(area_data["price"].min()), 2
-        ),
-        "maximum_price": round(
-            float(area_data["price"].max()), 2
-        ),
-        "average_sqft": round(
-            float(average_sqft), 2
-        ),
-        "price_per_sqft": round(
-            float(price_per_sqft), 2
-        )
-    }
-
-
-def all_area_statistics():
-
-    result = []
-
-    for area in sorted(
-        df["area"].dropna().unique()
-    ):
-
-        stats = area_statistics(area)
-
-        if stats:
-            result.append(stats)
-
-    return result
-
-
-# =========================================================
-# HOME PAGE
-# =========================================================
-
-@app.route("/")
-def home():
-
-    return send_from_directory(
-        BASE_DIR,
-        "index.html"
-    )
-
-
-# =========================================================
+# ==========================================================
 # HEALTH CHECK
-# =========================================================
+# ==========================================================
 
 @app.route("/api/health")
 def health():
 
     return jsonify({
         "status": "success",
-        "message": "House Price Prediction API is running",
-        "properties": int(len(df)),
-        "areas": int(df["area"].nunique())
+        "message": "House Price API is running",
+        "rows": len(df),
+        "model_r2": round(float(r2), 3)
     })
 
 
-# =========================================================
+# ==========================================================
 # GET ALL AREAS
-# =========================================================
+# ==========================================================
 
 @app.route("/api/areas")
 def get_areas():
@@ -343,46 +277,143 @@ def get_areas():
     })
 
 
-# =========================================================
-# AREA INFORMATION
-# =========================================================
+# ==========================================================
+# AREA DETAILS
+# ==========================================================
 
 @app.route("/api/area/<path:area_name>")
-def get_area(area_name):
+def area_details(area_name):
 
-    stats = area_statistics(area_name)
+    area_data = df[
+        df["area"]
+        .astype(str)
+        .str.lower()
+        == area_name.lower()
+    ]
 
-    if stats is None:
+
+    if area_data.empty:
 
         return jsonify({
             "success": False,
             "message": "Area not found"
         }), 404
 
+
+    avg_price = area_data["price"].mean()
+
+    avg_sqft = area_data["sqft"].mean()
+
+    price_per_sqft = (
+        area_data["price"] /
+        area_data["sqft"]
+    ).mean()
+
+    min_price = area_data["price"].min()
+
+    max_price = area_data["price"].max()
+
+    avg_bhk = area_data["bhk"].mean()
+
+
     return jsonify({
+
         "success": True,
-        "data": stats
+
+        "area": area_name,
+
+        "properties": len(area_data),
+
+        "average_price": round(
+            float(avg_price),
+            2
+        ),
+
+        "minimum_price": round(
+            float(min_price),
+            2
+        ),
+
+        "maximum_price": round(
+            float(max_price),
+            2
+        ),
+
+        "average_sqft": round(
+            float(avg_sqft),
+            2
+        ),
+
+        "price_per_sqft": round(
+            float(price_per_sqft),
+            2
+        ),
+
+        "average_bhk": round(
+            float(avg_bhk),
+            2
+        )
     })
 
 
-# =========================================================
-# AREA-WISE STATISTICS
-# =========================================================
+# ==========================================================
+# ALL AREA STATISTICS
+# ==========================================================
 
 @app.route("/api/area-stats")
 def area_stats():
 
-    stats = all_area_statistics()
+    grouped = df.groupby("area")
+
+    results = []
+
+
+    for area, data in grouped:
+
+        avg_price = data["price"].mean()
+
+        price_per_sqft = (
+            data["price"] /
+            data["sqft"]
+        ).mean()
+
+
+        results.append({
+
+            "area": str(area),
+
+            "average_price": round(
+                float(avg_price),
+                2
+            ),
+
+            "price_per_sqft": round(
+                float(price_per_sqft),
+                2
+            ),
+
+            "properties": len(data)
+        })
+
+
+    results = sorted(
+        results,
+        key=lambda x: x["average_price"],
+        reverse=True
+    )
+
 
     return jsonify({
+
         "success": True,
-        "data": stats
+
+        "data": results
     })
 
 
-# =========================================================
+# ==========================================================
 # PRICE PREDICTION
-# =========================================================
+# ==========================================================
 
 @app.route("/api/predict", methods=["POST"])
 def predict():
@@ -397,566 +428,412 @@ def predict():
                 "message": "No data received"
             }), 400
 
+
+        # ----------------------------------------------
+        # GET INPUT VALUES
+        # ----------------------------------------------
+
         area = str(
-            data.get("area", "")
+            data.get(
+                "area",
+                ""
+            )
         ).strip()
 
-        bhk = safe_int(
-            data.get("bhk")
+
+        bhk = float(
+            data.get(
+                "bhk",
+                0
+            )
         )
 
-        bathrooms = safe_int(
-            data.get("bathrooms")
+
+        bathrooms = float(
+            data.get(
+                "bathrooms",
+                0
+            )
         )
 
-        sqft = safe_float(
-            data.get("sqft")
+
+        sqft = float(
+            data.get(
+                "sqft",
+                0
+            )
         )
 
-        age = safe_int(
-            data.get("age")
+
+        age = float(
+            data.get(
+                "age",
+                0
+            )
         )
+
+
+        # ----------------------------------------------
+        # VALIDATION
+        # ----------------------------------------------
 
         if not area:
+
             return jsonify({
                 "success": False,
                 "message": "Please select an area"
             }), 400
 
+
         if bhk <= 0:
+
             return jsonify({
                 "success": False,
-                "message": "BHK must be greater than 0"
+                "message": "Invalid BHK"
             }), 400
+
 
         if bathrooms <= 0:
+
             return jsonify({
                 "success": False,
-                "message": "Bathrooms must be greater than 0"
+                "message": "Invalid bathrooms"
             }), 400
+
 
         if sqft <= 0:
+
             return jsonify({
                 "success": False,
-                "message": "Area in square feet must be greater than 0"
+                "message": "Invalid square feet"
             }), 400
+
 
         if age < 0:
+
             return jsonify({
                 "success": False,
-                "message": "Property age cannot be negative"
+                "message": "Invalid property age"
             }), 400
 
-        input_data = pd.DataFrame([
-            {
-                "area": area,
-                "bhk": bhk,
-                "bathrooms": bathrooms,
-                "sqft": sqft,
-                "age": age
-            }
-        ])
 
-        predicted_price = float(
-            model.predict(input_data)[0]
-        )
+        # ----------------------------------------------
+        # CREATE INPUT DATA
+        # ----------------------------------------------
 
-        price_per_sqft = (
-            predicted_price / sqft
-        )
+        input_data = pd.DataFrame([{
 
-        # Area statistics
-        selected_area_data = df[
-            df["area"].str.lower()
+            "area": area,
+
+            "bhk": bhk,
+
+            "bathrooms": bathrooms,
+
+            "sqft": sqft,
+
+            "age": age
+
+        }])
+
+
+        # ----------------------------------------------
+        # PREDICT PRICE
+        # ----------------------------------------------
+
+        predicted_price = model.predict(
+            input_data
+        )[0]
+
+
+        # ----------------------------------------------
+        # AREA INFORMATION
+        # ----------------------------------------------
+
+        area_data = df[
+            df["area"]
+            .astype(str)
+            .str.lower()
             == area.lower()
         ]
 
-        if not selected_area_data.empty:
 
-            area_average = float(
-                selected_area_data["price"].mean()
+        if not area_data.empty:
+
+            area_avg = (
+                area_data["price"]
+                .mean()
             )
 
-            area_min = float(
-                selected_area_data["price"].min()
-            )
 
-            area_max = float(
-                selected_area_data["price"].max()
-            )
+            area_price_sqft = (
+                area_data["price"] /
+                area_data["sqft"]
+            ).mean()
+
 
         else:
 
-            area_average = predicted_price
-            area_min = predicted_price * 0.85
-            area_max = predicted_price * 1.15
+            area_avg = predicted_price
 
-        # Estimated prediction range
-        prediction_min = max(
-            0,
+            area_price_sqft = (
+                predicted_price /
+                sqft
+            )
+
+
+        # ----------------------------------------------
+        # PRICE RANGE
+        # ----------------------------------------------
+
+        lower_price = (
             predicted_price * 0.90
         )
 
-        prediction_max = (
+
+        upper_price = (
             predicted_price * 1.10
         )
 
+
+        # ----------------------------------------------
+        # PRICE PER SQFT
+        # ----------------------------------------------
+
+        predicted_price_sqft = (
+            predicted_price /
+            sqft
+        )
+
+
+        # ----------------------------------------------
+        # RESPONSE
+        # ----------------------------------------------
+
         return jsonify({
+
             "success": True,
 
-            "prediction": {
-                "price": round(
-                    predicted_price,
-                    2
-                ),
+            "predicted_price": round(
+                float(predicted_price),
+                2
+            ),
 
-                "minimum": round(
-                    prediction_min,
-                    2
-                ),
+            "minimum_estimate": round(
+                float(lower_price),
+                2
+            ),
 
-                "maximum": round(
-                    prediction_max,
-                    2
-                ),
+            "maximum_estimate": round(
+                float(upper_price),
+                2
+            ),
 
-                "price_per_sqft": round(
-                    price_per_sqft,
-                    2
-                ),
+            "price_per_sqft": round(
+                float(predicted_price_sqft),
+                2
+            ),
 
-                "area_average": round(
-                    area_average,
-                    2
-                ),
+            "area_average_price": round(
+                float(area_avg),
+                2
+            ),
 
-                "area_minimum": round(
-                    area_min,
-                    2
-                ),
+            "area_price_per_sqft": round(
+                float(area_price_sqft),
+                2
+            ),
 
-                "area_maximum": round(
-                    area_max,
-                    2
-                ),
+            "model_accuracy": round(
+                float(r2 * 100),
+                2
+            ),
 
-                "model_r2": round(
-                    float(model_r2),
-                    4
-                )
-            }
+            "area": area,
+
+            "sqft": sqft,
+
+            "bhk": bhk,
+
+            "bathrooms": bathrooms,
+
+            "age": age
         })
+
+
+    except ValueError:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Please enter valid numeric values."
+        }), 400
+
 
     except Exception as e:
 
-        print("Prediction error:", e)
-
         return jsonify({
+
             "success": False,
+
             "message": str(e)
+
         }), 500
 
 
-# =========================================================
+# ==========================================================
 # MARKET SUMMARY
-# =========================================================
+# ==========================================================
 
 @app.route("/api/market-summary")
 def market_summary():
 
-    average_price = df["price"].mean()
+    average_price = (
+        df["price"].mean()
+    )
 
-    price_per_sqft = (
+
+    median_price = (
+        df["price"].median()
+    )
+
+
+    average_sqft = (
+        df["sqft"].mean()
+    )
+
+
+    average_price_sqft = (
         df["price"] /
         df["sqft"]
     ).mean()
+
+
+    area_prices = (
+        df.groupby("area")["price"]
+        .mean()
+    )
+
+
+    most_expensive_area = (
+        area_prices.idxmax()
+    )
+
+
+    cheapest_area = (
+        area_prices.idxmin()
+    )
+
 
     return jsonify({
 
         "success": True,
 
-        "total_properties": int(
-            len(df)
-        ),
+        "total_properties": len(df),
 
-        "total_areas": int(
-            df["area"].nunique()
-        ),
+        "total_areas": df[
+            "area"
+        ].nunique(),
 
         "average_price": round(
             float(average_price),
             2
         ),
 
-        "average_price_per_sqft": round(
-            float(price_per_sqft),
+        "median_price": round(
+            float(median_price),
             2
         ),
 
-        "model_r2": round(
-            float(model_r2),
-            4
-        )
+        "average_sqft": round(
+            float(average_sqft),
+            2
+        ),
+
+        "average_price_per_sqft": round(
+            float(average_price_sqft),
+            2
+        ),
+
+        "most_expensive_area":
+            str(most_expensive_area),
+
+        "cheapest_area":
+            str(cheapest_area)
     })
 
 
-# =========================================================
-# SIMILAR AREA RECOMMENDATIONS
-# =========================================================
+# ==========================================================
+# RECOMMENDED AREAS
+# ==========================================================
 
 @app.route("/api/recommendations")
 def recommendations():
 
-    selected_area = request.args.get(
-        "area",
-        ""
-    ).strip()
-
-    stats = all_area_statistics()
-
-    if not stats:
-
-        return jsonify({
-            "success": True,
-            "data": []
-        })
-
-    # If an area is selected, find areas
-    # with similar average price.
-    if selected_area:
-
-        selected = area_statistics(
-            selected_area
-        )
-
-        if selected:
-
-            target_price = selected[
-                "average_price"
-            ]
-
-            target_ppsf = selected[
-                "price_per_sqft"
-            ]
-
-            for item in stats:
-
-                price_difference = abs(
-                    item["average_price"]
-                    - target_price
-                ) / max(
-                    target_price,
-                    1
-                )
-
-                ppsf_difference = abs(
-                    item["price_per_sqft"]
-                    - target_ppsf
-                ) / max(
-                    target_ppsf,
-                    1
-                )
-
-                item["_similarity"] = (
-                    price_difference
-                    + ppsf_difference
-                )
-
-            stats = sorted(
-                stats,
-                key=lambda x: x["_similarity"]
-            )
-
-            # Remove selected area
-            stats = [
-                x for x in stats
-                if x["area"].lower()
-                != selected_area.lower()
-            ]
-
-            stats = stats[:6]
-
-            for item in stats:
-                item.pop(
-                    "_similarity",
-                    None
-                )
-
-            return jsonify({
-                "success": True,
-                "data": stats
-            })
-
-    # Default: return six areas with
-    # lower average price per sqft
-    stats = sorted(
-        stats,
-        key=lambda x: x["price_per_sqft"]
-    )
-
-    return jsonify({
-        "success": True,
-        "data": stats[:6]
-    })
-
-
-# =========================================================
-# BUDGET-BASED AREA SEARCH
-# =========================================================
-
-@app.route("/api/budget")
-def budget_search():
-
-    budget = safe_float(
-        request.args.get(
-            "budget",
-            0
-        )
-    )
-
-    if budget <= 0:
-
-        return jsonify({
-            "success": False,
-            "message": "Please enter a valid budget"
-        }), 400
-
-    stats = all_area_statistics()
-
-    matches = [
-        item
-        for item in stats
-        if item["average_price"] <= budget
-    ]
-
-    matches = sorted(
-        matches,
-        key=lambda x: x["average_price"]
-    )
-
-    return jsonify({
-        "success": True,
-        "budget": budget,
-        "data": matches
-    })
-
-
-# =========================================================
-# PRICE DISTRIBUTION
-# =========================================================
-
-@app.route("/api/price-distribution")
-def price_distribution():
-
-    bins = 8
-
-    try:
-
-        counts, edges = np.histogram(
-            df["price"],
-            bins=bins
-        )
-
-        result = []
-
-        for i in range(
-            len(counts)
-        ):
-
-            result.append({
-
-                "minimum": round(
-                    float(edges[i]),
-                    2
-                ),
-
-                "maximum": round(
-                    float(edges[i + 1]),
-                    2
-                ),
-
-                "count": int(
-                    counts[i]
-                )
-            })
-
-        return jsonify({
-            "success": True,
-            "data": result
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 500
-
-
-# =========================================================
-# TREND DATA
-# =========================================================
-
-@app.route("/api/trend")
-def trend():
-
-    # Look for a possible time/year column
-    possible_columns = [
-        "year",
-        "date",
-        "listed_date",
-        "listing_date",
-        "created_at",
-        "sold_date"
-    ]
-
-    trend_column = None
-
-    for column in possible_columns:
-
-        if column in df.columns:
-            trend_column = column
-            break
-
-    # Dataset doesn't contain time information
-    if trend_column is None:
-
-        return jsonify({
-            "success": False,
-            "available": False,
-            "message": (
-                "Your dataset does not contain a "
-                "year or date column. A true historical "
-                "price trend requires time-based data."
-            )
-        })
-
-    temp = df.copy()
-
-    # Numeric year
-    if trend_column == "year":
-
-        temp["period"] = pd.to_numeric(
-            temp["year"],
-            errors="coerce"
-        )
-
-    else:
-
-        temp["period"] = pd.to_datetime(
-            temp[trend_column],
-            errors="coerce"
-        ).dt.year
-
-    temp["period"] = pd.to_numeric(
-        temp["period"],
-        errors="coerce"
-    )
-
-    temp = temp.dropna(
-        subset=["period"]
-    )
-
-    if temp.empty:
-
-        return jsonify({
-            "success": False,
-            "available": False,
-            "message": "No valid date/year data found."
-        })
-
     grouped = (
-        temp
-        .groupby("period")["price"]
-        .mean()
+        df.groupby("area")
+        .agg(
+            average_price=("price", "mean"),
+            average_sqft=("sqft", "mean"),
+            properties=("price", "count")
+        )
         .reset_index()
-        .sort_values("period")
     )
+
+
+    grouped["price_per_sqft"] = (
+        grouped["average_price"] /
+        grouped["average_sqft"]
+    )
+
+
+    grouped = grouped.sort_values(
+        "price_per_sqft"
+    )
+
 
     result = []
 
-    for _, row in grouped.iterrows():
+
+    for _, row in grouped.head(6).iterrows():
 
         result.append({
-            "year": int(row["period"]),
+
+            "area": str(
+                row["area"]
+            ),
+
             "average_price": round(
-                float(row["price"]),
+                float(
+                    row["average_price"]
+                ),
                 2
+            ),
+
+            "price_per_sqft": round(
+                float(
+                    row["price_per_sqft"]
+                ),
+                2
+            ),
+
+            "properties": int(
+                row["properties"]
             )
         })
 
+
     return jsonify({
+
         "success": True,
-        "available": True,
+
         "data": result
     })
 
 
-# =========================================================
-# AREA COMPARISON
-# =========================================================
-
-@app.route("/api/compare")
-def compare():
-
-    areas_parameter = request.args.get(
-        "areas",
-        ""
-    )
-
-    if not areas_parameter:
-
-        return jsonify({
-            "success": False,
-            "message": "Please provide areas"
-        }), 400
-
-    requested_areas = [
-        x.strip()
-        for x in areas_parameter.split(",")
-        if x.strip()
-    ]
-
-    result = []
-
-    for area in requested_areas:
-
-        stats = area_statistics(area)
-
-        if stats:
-            result.append(stats)
-
-    return jsonify({
-        "success": True,
-        "data": result
-    })
-
-
-# =========================================================
-# ERROR HANDLERS
-# =========================================================
-
-@app.errorhandler(404)
-def not_found(error):
-
-    return jsonify({
-        "success": False,
-        "message": "API endpoint not found"
-    }), 404
-
-
-@app.errorhandler(500)
-def server_error(error):
-
-    return jsonify({
-        "success": False,
-        "message": "Internal server error"
-    }), 500
-
-
-# =========================================================
-# START SERVER
-# =========================================================
+# ==========================================================
+# RUN SERVER
+# ==========================================================
 
 if __name__ == "__main__":
 
@@ -967,8 +844,12 @@ if __name__ == "__main__":
         )
     )
 
+
     app.run(
+
         host="0.0.0.0",
+
         port=port,
+
         debug=False
     )
