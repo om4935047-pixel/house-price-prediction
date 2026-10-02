@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 
 from sklearn.compose import ColumnTransformer
@@ -23,6 +23,11 @@ warnings.filterwarnings("ignore")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    return send_from_directory(BASE_DIR, filename)
 CORS(app)
 
 DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
