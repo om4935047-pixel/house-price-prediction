@@ -1,78 +1,499 @@
-const API = "";
-const $ = id => document.getElementById(id);
+const API = window.location.origin;
 
-$("location_score").addEventListener("input", e => $("locationValue").textContent = e.target.value);
 
-async function checkAPI(){
-  try{
-    const r = await fetch(`${API}/api/health`);
-    if(!r.ok) throw new Error();
-    $("apiStatus").textContent = "● API Connected";
-    $("apiStatus").style.color = "#35794d";
-  }catch{
-    $("apiStatus").textContent = "● Start Flask backend";
-    $("apiStatus").style.color = "#b36b2c";
-  }
-}
+// --------------------------------------------------
+// FORMAT MONEY
+// --------------------------------------------------
 
-async function loadMetrics(){
-  try{
-    const r = await fetch(`${API}/api/metrics`);
-    const m = await r.json();
-    const vals = [m.mae, m.mse, m.rmse, m.r2];
-    document.querySelectorAll(".metric b").forEach((el,i)=>el.textContent=vals[i]);
-  }catch{}
-}
+function money(value) {
 
-$("predictionForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const btn = $("predictBtn");
-  btn.disabled = true; btn.textContent = "Predicting...";
-  $("errorBox").classList.add("hidden");
+    if (value === null || value === undefined) {
+        return "₹0";
+    }
 
-  const payload = {
-    area_sqft: Number($("area_sqft").value),
-    bedrooms: Number($("bedrooms").value),
-    bathrooms: Number($("bathrooms").value),
-    age_years: Number($("age_years").value),
-    location_score: Number($("location_score").value),
-    parking: Number($("parking").value)
-  };
-
-  try{
-    const r = await fetch(`${API}/api/predict`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload)
+    return "₹" + Number(value).toLocaleString("en-IN", {
+        maximumFractionDigits: 0
     });
-    const data = await r.json();
-    if(!r.ok) throw new Error(data.error || "Prediction failed");
-    $("price").textContent = "₹" + Number(data.predicted_price_inr).toLocaleString("en-IN");
-    $("priceLakh").textContent = `${data.predicted_price_lakh} lakh`;
-    $("resultEmpty").classList.add("hidden");
-    $("resultReady").classList.remove("hidden");
-  }catch(err){
-    $("errorBox").textContent = err.message + " — Make sure the Flask server is running.";
-    $("errorBox").classList.remove("hidden");
-  }finally{
-    btn.disabled = false; btn.textContent = "Predict House Price";
-  }
-});
+}
 
-$("againBtn").addEventListener("click", ()=>{
-  $("resultReady").classList.add("hidden");
-  $("resultEmpty").classList.remove("hidden");
-  document.querySelector("#predict").scrollIntoView({behavior:"smooth"});
-});
 
-$("retrainBtn").addEventListener("click", async ()=>{
-  const btn = $("retrainBtn"); btn.disabled = true; btn.textContent = "Retraining...";
-  try{
-    await fetch(`${API}/api/retrain`, {method:"POST"});
-    await loadMetrics();
-    btn.textContent = "Model Retrained ✓";
-    setTimeout(()=>btn.textContent="Retrain Model",1800);
-  }catch{ btn.textContent="Backend Offline"; }
-  btn.disabled=false;
-});
+// --------------------------------------------------
+// LOAD AREAS
+// --------------------------------------------------
 
-checkAPI(); loadMetrics();
+async function loadAreas() {
+
+    try {
+
+        const response =
+            await fetch(`${API}/api/areas`);
+
+        if (!response.ok) {
+            throw new Error("API error");
+        }
+
+        const result =
+            await response.json();
+
+        const areaSelect =
+            document.getElementById("area");
+
+        const analysisSelect =
+            document.getElementById("areaAnalysis");
+
+        areaSelect.innerHTML =
+            `<option value="">
+                Select Area
+            </option>`;
+
+        analysisSelect.innerHTML =
+            `<option value="">
+                Select Area
+            </option>`;
+
+        result.areas.forEach(area => {
+
+            const option1 =
+                document.createElement("option");
+
+            option1.value = area;
+            option1.textContent = area;
+
+            areaSelect.appendChild(option1);
+
+
+            const option2 =
+                document.createElement("option");
+
+            option2.value = area;
+            option2.textContent = area;
+
+            analysisSelect.appendChild(option2);
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "area"
+        ).innerHTML =
+            `<option>
+                Backend not connected
+            </option>`;
+    }
+}
+
+
+// --------------------------------------------------
+// PREDICT PRICE
+// --------------------------------------------------
+
+document
+    .getElementById("predictionForm")
+    .addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const data = {
+
+                area:
+                    document.getElementById(
+                        "area"
+                    ).value,
+
+                bhk:
+                    document.getElementById(
+                        "bhk"
+                    ).value,
+
+                bathrooms:
+                    document.getElementById(
+                        "bathrooms"
+                    ).value,
+
+                sqft:
+                    document.getElementById(
+                        "sqft"
+                    ).value,
+
+                age:
+                    document.getElementById(
+                        "age"
+                    ).value
+            };
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API}/api/predict`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(data)
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+
+                if (!result.success) {
+
+                    alert(
+                        result.message
+                    );
+
+                    return;
+                }
+
+
+                document.getElementById(
+                    "predictedPrice"
+                ).textContent =
+                    money(
+                        result.predicted_price
+                    );
+
+
+                document.getElementById(
+                    "minPrice"
+                ).textContent =
+                    money(
+                        result.minimum_estimate
+                    );
+
+
+                document.getElementById(
+                    "maxPrice"
+                ).textContent =
+                    money(
+                        result.maximum_estimate
+                    );
+
+
+                document.getElementById(
+                    "priceSqft"
+                ).textContent =
+                    money(
+                        result.price_per_sqft
+                    );
+
+
+                document.getElementById(
+                    "areaAverage"
+                ).textContent =
+                    money(
+                        result.area_average_price
+                    );
+
+
+                document.getElementById(
+                    "accuracy"
+                ).textContent =
+                    result.model_accuracy +
+                    "%";
+
+
+                document.getElementById(
+                    "resultMessage"
+                ).textContent =
+                    `Estimated for ${result.area}, ${result.bhk} BHK property of ${result.sqft} sq.ft.`;
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "Failed to fetch. Make sure the Flask server is running."
+                );
+            }
+
+        }
+    );
+
+
+// --------------------------------------------------
+// MARKET SUMMARY
+// --------------------------------------------------
+
+async function loadMarketSummary() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/api/market-summary`
+            );
+
+        const data =
+            await response.json();
+
+
+        document.getElementById(
+            "totalProperties"
+        ).textContent =
+            data.total_properties;
+
+
+        document.getElementById(
+            "totalAreas"
+        ).textContent =
+            data.total_areas;
+
+
+        document.getElementById(
+            "averagePrice"
+        ).textContent =
+            money(
+                data.average_price
+            );
+
+
+        document.getElementById(
+            "averageSqft"
+        ).textContent =
+            money(
+                data.average_price_per_sqft
+            );
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+}
+
+
+// --------------------------------------------------
+// AREA CHART
+// --------------------------------------------------
+
+async function loadChart() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/api/area-stats`
+            );
+
+        const result =
+            await response.json();
+
+
+        const areas =
+            result.data
+                .slice(0, 10);
+
+
+        const labels =
+            areas.map(
+                item => item.area
+            );
+
+
+        const prices =
+            areas.map(
+                item =>
+                    item.average_price
+            );
+
+
+        new Chart(
+            document.getElementById(
+                "areaChart"
+            ),
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [
+
+                        {
+                            label:
+                                "Average Price",
+
+                            data: prices
+                        }
+
+                    ]
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    plugins: {
+
+                        tooltip: {
+
+                            callbacks: {
+
+                                label:
+                                    function(context) {
+
+                                        return money(
+                                            context.raw
+                                        );
+
+                                    }
+
+                            }
+
+                        }
+
+                    },
+
+                    scales: {
+
+                        y: {
+
+                            ticks: {
+
+                                callback:
+                                    function(value) {
+
+                                        return money(
+                                            value
+                                        );
+
+                                    }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+}
+
+
+// --------------------------------------------------
+// AREA DETAILS
+// --------------------------------------------------
+
+async function loadAreaDetails() {
+
+    const area =
+        document.getElementById(
+            "areaAnalysis"
+        ).value;
+
+
+    if (!area) {
+
+        alert(
+            "Please select an area."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/api/area/${encodeURIComponent(area)}`
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!result.success) {
+
+            alert(
+                result.message
+            );
+
+            return;
+        }
+
+
+        document.getElementById(
+            "detailAverage"
+        ).textContent =
+            money(
+                result.average_price
+            );
+
+
+        document.getElementById(
+            "detailSqft"
+        ).textContent =
+            money(
+                result.price_per_sqft
+            );
+
+
+        document.getElementById(
+            "detailMin"
+        ).textContent =
+            money(
+                result.minimum_price
+            );
+
+
+        document.getElementById(
+            "detailMax"
+        ).textContent =
+            money(
+                result.maximum_price
+            );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Could not load area information."
+        );
+    }
+}
+
+
+// --------------------------------------------------
+// START
+// --------------------------------------------------
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        loadAreas();
+
+        loadMarketSummary();
+
+        loadChart();
+
+    }
+);
