@@ -1,383 +1,599 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 import pandas as pd
 import numpy as np
-from pathlib import Path
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import joblib
 import os
 
-# ============================================================
-# PROJECT PATHS
-# ============================================================
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_absolute_error, r2_score
 
-ROOT = Path(__file__).resolve().parent
+app = Flask(__name__)
+CORS(app)
 
-DATA_PATH = ROOT / "house_prices.csv"
-MODEL_PATH = ROOT / "model.joblib"
-FRONTEND_PATH = ROOT
+# --------------------------------------------------
+# LOAD DATASET
+# --------------------------------------------------
 
-FEATURES = [
-    "area_sqft",
-    "bedrooms",
-    "bathrooms",
-    "age_years",
-    "location_score",
-    "parking"
-]
+DATA_PATH = os.path.join("dataset", "house_prices.csv")
 
-# ============================================================
-# FLASK APP
-# ============================================================
-
-app = Flask(__name__, static_folder=str(FRONTEND_PATH), static_url_path="")
-app.config["JSON_SORT_KEYS"] = False
-
-
-# ============================================================
-# TRAIN MODEL
-# ============================================================
-
-def train_model():
-
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(
-            f"Dataset not found: {DATA_PATH}"
-        )
-
-    df = pd.read_csv(DATA_PATH)
-
-    # Check required columns
-    required_columns = FEATURES + ["price_lakh"]
-
-    missing_columns = [
-        col for col in required_columns
-        if col not in df.columns
-    ]
-
-    if missing_columns:
-        raise ValueError(
-            f"Missing columns in dataset: {missing_columns}"
-        )
-
-    X = df[FEATURES]
-    y = df["price_lakh"]
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.20,
-        random_state=42
+if not os.path.exists(DATA_PATH):
+    raise FileNotFoundError(
+        "Dataset not found. Put house_prices.csv inside dataset folder."
     )
 
-    model = LinearRegression()
+df = pd.read_csv(DATA_PATH)
 
-    model.fit(X_train, y_train)
+# Clean column names
+df.columns = [col.strip().lower() for col in df.columns]
 
-    predictions = model.predict(X_test)
+# --------------------------------------------------
+# REQUIRED COLUMNS
+# --------------------------------------------------
 
-    mse = mean_squared_error(y_test, predictions)
+required_columns = [
+    "area",
+    "bhk",
+    "bathrooms",
+    "sqft",
+    "age",
+    "price"
+]
 
-    metrics = {
-        "mae": round(
-            float(mean_absolute_error(y_test, predictions)),
-            3
+missing_columns = [
+    col for col in required_columns
+    if col not in df.columns
+]
+
+if missing_columns:
+    raise ValueError(
+        f"Missing columns in dataset: {missing_columns}"
+    )
+
+# Remove invalid rows
+df = df.dropna(subset=required_columns)
+
+# Convert numeric columns
+for col in ["bhk", "bathrooms", "sqft", "age", "price"]:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+df = df.dropna()
+
+# --------------------------------------------------
+# FEATURES
+# --------------------------------------------------
+
+X = df[
+    [
+        "area",
+        "bhk",
+        "bathrooms",
+        "sqft",
+        "age"
+    ]
+]
+
+y = df["price"]
+
+categorical_features = ["area"]
+
+numeric_features = [
+    "bhk",
+    "bathrooms",
+    "sqft",
+    "age"
+]
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        (
+            "area",
+            OneHotEncoder(
+                handle_unknown="ignore"
+            ),
+            categorical_features
+        )
+    ],
+    remainder="passthrough"
+)
+
+model = Pipeline(
+    steps=[
+        (
+            "preprocessor",
+            preprocessor
         ),
+        (
+            "model",
+            RandomForestRegressor(
+                n_estimators=250,
+                random_state=42,
+                max_depth=18,
+                min_samples_split=2
+            )
+        )
+    ]
+)
 
-        "mse": round(
-            float(mse),
-            3
-        ),
+# --------------------------------------------------
+# TRAIN MODEL
+# --------------------------------------------------
 
-        "rmse": round(
-            float(np.sqrt(mse)),
-            3
-        ),
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42
+)
 
-        "r2": round(
-            float(r2_score(y_test, predictions)),
-            4
-        ),
+model.fit(X_train, y_train)
 
-        "train_samples": int(len(X_train)),
-        "test_samples": int(len(X_test))
-    }
+predictions = model.predict(X_test)
 
-    # Save model
-    joblib.dump(model, MODEL_PATH)
+mae = mean_absolute_error(
+    y_test,
+    predictions
+)
 
-    return model, metrics
+r2 = r2_score(
+    y_test,
+    predictions
+)
 
+print("Model trained successfully")
+print("MAE:", mae)
+print("R2:", r2)
 
-# ============================================================
-# LOAD / TRAIN MODEL
-# ============================================================
-
-try:
-
-    model, metrics = train_model()
-
-    print("Model trained successfully.")
-    print("Dataset:", DATA_PATH)
-    print("Model:", MODEL_PATH)
-    print("Metrics:", metrics)
-
-except Exception as error:
-
-    print("MODEL ERROR:", error)
-
-    model = None
-    metrics = {}
-
-
-# ============================================================
+# --------------------------------------------------
 # HOME PAGE
-# ============================================================
+# --------------------------------------------------
 
 @app.route("/")
 def home():
-
-    return send_from_directory(
-        FRONTEND_PATH,
-        "index.html"
-    )
+    return render_template("index.html")
 
 
-# ============================================================
-# STATIC FILES
-# ============================================================
-
-@app.route("/<path:filename>")
-def static_files(filename):
-
-    return send_from_directory(
-        FRONTEND_PATH,
-        filename
-    )
-
-
-# ============================================================
+# --------------------------------------------------
 # HEALTH CHECK
-# ============================================================
+# --------------------------------------------------
 
-@app.route("/api/health", methods=["GET"])
+@app.route("/api/health")
 def health():
 
     return jsonify({
-        "status": "ok",
-        "model": "Linear Regression",
-        "dataset": DATA_PATH.name
+        "status": "success",
+        "message": "House Price API is running",
+        "rows": len(df),
+        "model_r2": round(float(r2), 3)
     })
 
 
-# ============================================================
-# MODEL METRICS
-# ============================================================
+# --------------------------------------------------
+# GET AREAS
+# --------------------------------------------------
 
-@app.route("/api/metrics", methods=["GET"])
-def get_metrics():
+@app.route("/api/areas")
+def get_areas():
 
-    if not metrics:
+    areas = sorted(
+        df["area"]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
+    return jsonify({
+        "success": True,
+        "areas": areas
+    })
+
+
+# --------------------------------------------------
+# AREA ANALYTICS
+# --------------------------------------------------
+
+@app.route("/api/area/<path:area_name>")
+def area_details(area_name):
+
+    area_data = df[
+        df["area"].astype(str).str.lower()
+        == area_name.lower()
+    ]
+
+    if area_data.empty:
 
         return jsonify({
-            "error": "Model is not available."
-        }), 500
+            "success": False,
+            "message": "Area not found"
+        }), 404
 
-    return jsonify(metrics)
+    avg_price = area_data["price"].mean()
+
+    avg_sqft = area_data["sqft"].mean()
+
+    price_per_sqft = (
+        area_data["price"] /
+        area_data["sqft"]
+    ).mean()
+
+    min_price = area_data["price"].min()
+
+    max_price = area_data["price"].max()
+
+    avg_bhk = area_data["bhk"].mean()
+
+    return jsonify({
+
+        "success": True,
+
+        "area": area_name,
+
+        "properties": len(area_data),
+
+        "average_price": round(
+            float(avg_price), 2
+        ),
+
+        "minimum_price": round(
+            float(min_price), 2
+        ),
+
+        "maximum_price": round(
+            float(max_price), 2
+        ),
+
+        "average_sqft": round(
+            float(avg_sqft), 2
+        ),
+
+        "price_per_sqft": round(
+            float(price_per_sqft), 2
+        ),
+
+        "average_bhk": round(
+            float(avg_bhk), 2
+        )
+    })
 
 
-# ============================================================
-# DATA SUMMARY
-# ============================================================
+# --------------------------------------------------
+# ALL AREA STATISTICS
+# --------------------------------------------------
 
-@app.route("/api/data-summary", methods=["GET"])
-def data_summary():
+@app.route("/api/area-stats")
+def area_stats():
 
-    try:
+    grouped = df.groupby("area")
 
-        df = pd.read_csv(DATA_PATH)
+    results = []
 
-        return jsonify({
+    for area, data in grouped:
 
-            "rows": int(len(df)),
+        avg_price = data["price"].mean()
 
-            "columns": int(len(df.columns)),
+        price_per_sqft = (
+            data["price"] /
+            data["sqft"]
+        ).mean()
 
-            "features": FEATURES,
+        results.append({
 
-            "price_min": round(
-                float(df["price_lakh"].min()),
-                2
+            "area": str(area),
+
+            "average_price": round(
+                float(avg_price), 2
             ),
 
-            "price_max": round(
-                float(df["price_lakh"].max()),
-                2
+            "price_per_sqft": round(
+                float(price_per_sqft), 2
             ),
 
-            "price_avg": round(
-                float(df["price_lakh"].mean()),
-                2
-            )
-
+            "properties": len(data)
         })
 
-    except Exception as error:
+    results = sorted(
+        results,
+        key=lambda x: x["average_price"],
+        reverse=True
+    )
 
-        return jsonify({
-            "error": str(error)
-        }), 500
+    return jsonify({
+        "success": True,
+        "data": results
+    })
 
 
-# ============================================================
-# PREDICTION
-# ============================================================
+# --------------------------------------------------
+# PRICE PREDICTION
+# --------------------------------------------------
 
 @app.route("/api/predict", methods=["POST"])
 def predict():
 
     try:
 
-        if model is None:
+        data = request.get_json()
 
-            return jsonify({
-                "error": "Machine learning model is not available."
-            }), 500
+        area = str(
+            data.get("area", "")
+        ).strip()
 
-        data = request.get_json(force=True)
-
-        values = {
-            feature: float(data[feature])
-            for feature in FEATURES
-        }
-
-        # Validation
-
-        if values["area_sqft"] <= 0:
-
-            return jsonify({
-                "error": "Area must be greater than 0."
-            }), 400
-
-        if not 1 <= values["bedrooms"] <= 10:
-
-            return jsonify({
-                "error": "Bedrooms must be between 1 and 10."
-            }), 400
-
-        if not 1 <= values["bathrooms"] <= 10:
-
-            return jsonify({
-                "error": "Bathrooms must be between 1 and 10."
-            }), 400
-
-        if not 0 <= values["age_years"] <= 150:
-
-            return jsonify({
-                "error": "Age must be between 0 and 150 years."
-            }), 400
-
-        if not 1 <= values["location_score"] <= 10:
-
-            return jsonify({
-                "error": "Location score must be between 1 and 10."
-            }), 400
-
-        if not 0 <= values["parking"] <= 5:
-
-            return jsonify({
-                "error": "Parking spaces must be between 0 and 5."
-            }), 400
-
-        # Create DataFrame
-
-        X = pd.DataFrame(
-            [values],
-            columns=FEATURES
+        bhk = float(
+            data.get("bhk", 0)
         )
 
-        # Prediction
-
-        prediction = float(
-            model.predict(X)[0]
+        bathrooms = float(
+            data.get("bathrooms", 0)
         )
 
-        # Prevent negative price
+        sqft = float(
+            data.get("sqft", 0)
+        )
 
-        prediction = max(0, prediction)
+        age = float(
+            data.get("age", 0)
+        )
 
-        price_inr = prediction * 100000
+        if not area:
+            return jsonify({
+                "success": False,
+                "message": "Please select an area"
+            }), 400
+
+        if bhk <= 0:
+            return jsonify({
+                "success": False,
+                "message": "Invalid BHK"
+            }), 400
+
+        if bathrooms <= 0:
+            return jsonify({
+                "success": False,
+                "message": "Invalid bathrooms"
+            }), 400
+
+        if sqft <= 0:
+            return jsonify({
+                "success": False,
+                "message": "Invalid square feet"
+            }), 400
+
+        if age < 0:
+            return jsonify({
+                "success": False,
+                "message": "Invalid property age"
+            }), 400
+
+        input_data = pd.DataFrame([{
+
+            "area": area,
+
+            "bhk": bhk,
+
+            "bathrooms": bathrooms,
+
+            "sqft": sqft,
+
+            "age": age
+        }])
+
+        predicted_price = model.predict(
+            input_data
+        )[0]
+
+        # ------------------------------------------
+        # AREA DATA
+        # ------------------------------------------
+
+        area_data = df[
+            df["area"].astype(str).str.lower()
+            == area.lower()
+        ]
+
+        if not area_data.empty:
+
+            area_avg = area_data["price"].mean()
+
+            area_price_sqft = (
+                area_data["price"] /
+                area_data["sqft"]
+            ).mean()
+
+        else:
+
+            area_avg = predicted_price
+
+            area_price_sqft = (
+                predicted_price / sqft
+            )
+
+        # ------------------------------------------
+        # PRICE RANGE
+        # ------------------------------------------
+
+        lower_price = predicted_price * 0.90
+        upper_price = predicted_price * 1.10
+
+        # ------------------------------------------
+        # PRICE PER SQFT
+        # ------------------------------------------
+
+        predicted_price_sqft = (
+            predicted_price / sqft
+        )
 
         return jsonify({
 
-            "predicted_price_lakh": round(
-                prediction,
-                2
+            "success": True,
+
+            "predicted_price": round(
+                float(predicted_price), 2
             ),
 
-            "predicted_price_inr": round(
-                price_inr,
-                0
+            "minimum_estimate": round(
+                float(lower_price), 2
             ),
 
-            "currency": "INR",
+            "maximum_estimate": round(
+                float(upper_price), 2
+            ),
 
-            "unit": "lakh"
+            "price_per_sqft": round(
+                float(predicted_price_sqft), 2
+            ),
 
+            "area_average_price": round(
+                float(area_avg), 2
+            ),
+
+            "area_price_per_sqft": round(
+                float(area_price_sqft), 2
+            ),
+
+            "model_accuracy": round(
+                float(r2 * 100), 2
+            ),
+
+            "area": area,
+
+            "sqft": sqft,
+
+            "bhk": bhk,
+
+            "bathrooms": bathrooms,
+
+            "age": age
         })
 
-    except KeyError as error:
+    except Exception as e:
 
         return jsonify({
-            "error": f"Missing field: {error.args[0]}"
-        }), 400
-
-    except ValueError:
-
-        return jsonify({
-            "error": "Please enter valid numeric values."
-        }), 400
-
-    except Exception as error:
-
-        return jsonify({
-            "error": str(error)
+            "success": False,
+            "message": str(e)
         }), 500
 
 
-# ============================================================
-# RETRAIN MODEL
-# ============================================================
+# --------------------------------------------------
+# MARKET SUMMARY
+# --------------------------------------------------
 
-@app.route("/api/retrain", methods=["POST"])
-def retrain():
+@app.route("/api/market-summary")
+def market_summary():
 
-    global model
-    global metrics
+    average_price = df["price"].mean()
 
-    try:
+    median_price = df["price"].median()
 
-        model, metrics = train_model()
+    average_sqft = df["sqft"].mean()
 
-        return jsonify({
+    average_price_sqft = (
+        df["price"] / df["sqft"]
+    ).mean()
 
-            "message": "Model retrained successfully.",
+    most_expensive_area = (
+        df.groupby("area")["price"]
+        .mean()
+        .idxmax()
+    )
 
-            "metrics": metrics
+    cheapest_area = (
+        df.groupby("area")["price"]
+        .mean()
+        .idxmin()
+    )
 
+    return jsonify({
+
+        "success": True,
+
+        "total_properties": len(df),
+
+        "total_areas": df["area"].nunique(),
+
+        "average_price": round(
+            float(average_price), 2
+        ),
+
+        "median_price": round(
+            float(median_price), 2
+        ),
+
+        "average_sqft": round(
+            float(average_sqft), 2
+        ),
+
+        "average_price_per_sqft": round(
+            float(average_price_sqft), 2
+        ),
+
+        "most_expensive_area":
+            str(most_expensive_area),
+
+        "cheapest_area":
+            str(cheapest_area)
+    })
+
+
+# --------------------------------------------------
+# RECOMMENDED AREAS
+# --------------------------------------------------
+
+@app.route("/api/recommendations")
+def recommendations():
+
+    grouped = (
+        df.groupby("area")
+        .agg(
+            average_price=("price", "mean"),
+            average_sqft=("sqft", "mean"),
+            properties=("price", "count")
+        )
+        .reset_index()
+    )
+
+    grouped["price_per_sqft"] = (
+        grouped["average_price"] /
+        grouped["average_sqft"]
+    )
+
+    grouped = grouped.sort_values(
+        "price_per_sqft"
+    )
+
+    result = []
+
+    for _, row in grouped.head(6).iterrows():
+
+        result.append({
+
+            "area": str(row["area"]),
+
+            "average_price": round(
+                float(row["average_price"]), 2
+            ),
+
+            "price_per_sqft": round(
+                float(row["price_per_sqft"]), 2
+            ),
+
+            "properties": int(
+                row["properties"]
+            )
         })
 
-    except Exception as error:
+    return jsonify({
+        "success": True,
+        "data": result
+    })
 
-        return jsonify({
-            "error": str(error)
-        }), 500
 
-
-# ============================================================
+# --------------------------------------------------
 # RUN SERVER
-# ============================================================
+# --------------------------------------------------
 
 if __name__ == "__main__":
 
