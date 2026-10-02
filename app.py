@@ -27,7 +27,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.route("/static/<path:filename>")
 def static_files(filename):
-    return send_from_directory(BASE_DIR, filename)
+    return render_template("index.html")
 CORS(app)
 
 DATA_PATH = os.path.join(BASE_DIR, "house_prices.csv")
