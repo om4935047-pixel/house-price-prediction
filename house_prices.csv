@@ -1,4 +1,4 @@
-id,State,District,City,Area,BHK,Bathrooms,Size_sqft,Age,Price
+id,State,District,City,Area,BHK,Bathrooms,sqft,Age,Price
 1,Maharashtra,Jalgaon,Erandol,Kasar,1,1,450,0,960000
 2,Maharashtra,Jalgaon,Bhadgaon,Picharde,4,3,1720,28,2790000
 3,Maharashtra,Dhule,Shindkheda,Betawad,2,2,830,15,1630000
